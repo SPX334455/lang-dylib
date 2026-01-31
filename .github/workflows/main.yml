@@ -17,25 +17,23 @@ jobs:
 
       - name: Theos'u İndir
         run: |
+          # Önce eski varsa sil, sonra temiz indir
+          rm -rf $THEOS
           git clone --recursive https://github.com/theos/theos.git $THEOS
 
-      - name: SDK'ları İndir (iOS 14.5 vb.)
+      - name: SDK'ları İndir (Hata Düzeltildi)
         run: |
+          # BURASI: Klasör zaten varsa sil ki hata vermesin
+          rm -rf $THEOS/sdks
           git clone https://github.com/theos/sdks.git $THEOS/sdks
-          # SDK klasörünü düzeltme (bazı durumlarda gereklidir)
+          # SDK dosyalarını düzelt
           mv $THEOS/sdks/*.sdk $THEOS/sdks/ 2>/dev/null || true
 
       - name: Derlemeyi Başlat (Make)
         run: |
-          # Derleme komutu. Hata varsa durdurur.
+          # Derleme işlemi
           make clean
           make package FINALPACKAGE=1 messages=yes
-
-      - name: Dosyaları Listele (Kontrol Amaçlı)
-        run: |
-          echo "DEBUG: Klasör yapısı:"
-          find . -name "*.dylib"
-          find . -name "*.deb"
 
       - name: Dylib Dosyasını Yükle
         uses: actions/upload-artifact@v4
