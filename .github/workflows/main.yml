@@ -1,24 +1,50 @@
-name: Build Tweak
+name: Elle Derleme (Manual Build)
 
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-latest
+    env:
+      THEOS: ${{ github.workspace }}/theos
+
     steps:
-      - name: Checkout
+      - name: Depoyu Çek (Checkout)
         uses: actions/checkout@v4
 
-      - name: Build Tweak
-        uses: Randomblock1/theos-action@v1
-        with:
-          theos-sdks: 'https://github.com/theos/sdks'
+      - name: Theos'u İndir
+        run: |
+          git clone --recursive https://github.com/theos/theos.git $THEOS
 
-      - name: Upload Dylib Only
+      - name: SDK'ları İndir (iOS 14.5 vb.)
+        run: |
+          git clone https://github.com/theos/sdks.git $THEOS/sdks
+          # SDK klasörünü düzeltme (bazı durumlarda gereklidir)
+          mv $THEOS/sdks/*.sdk $THEOS/sdks/ 2>/dev/null || true
+
+      - name: Derlemeyi Başlat (Make)
+        run: |
+          # Derleme komutu. Hata varsa durdurur.
+          make clean
+          make package FINALPACKAGE=1 messages=yes
+
+      - name: Dosyaları Listele (Kontrol Amaçlı)
+        run: |
+          echo "DEBUG: Klasör yapısı:"
+          find . -name "*.dylib"
+          find . -name "*.deb"
+
+      - name: Dylib Dosyasını Yükle
         uses: actions/upload-artifact@v4
         with:
           name: DilSihirbazi-Dylib
-          path: "**/*.dylib"
+          path: .theos/obj/debug/*.dylib
+
+      - name: Deb Dosyasını Yükle (Yedek)
+        uses: actions/upload-artifact@v4
+        with:
+          name: DilSihirbazi-Deb
+          path: packages/*.deb
