@@ -1,4 +1,4 @@
-name: Elle Derleme (Manual Build)
+name: Son ve Kesin Derleme
 
 on:
   push:
@@ -12,37 +12,38 @@ jobs:
       THEOS: ${{ github.workspace }}/theos
 
     steps:
-      - name: Depoyu Çek (Checkout)
+      - name: Depoyu Çek
         uses: actions/checkout@v4
 
-      - name: Theos'u İndir
+      - name: LDID Yükle (Hata Çözümü)
         run: |
-          # Önce eski varsa sil, sonra temiz indir
+          brew install ldid
+          # Garanti olsun diye path'e ekliyoruz
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+
+      - name: Theos ve SDK Kurulumu
+        run: |
           rm -rf $THEOS
           git clone --recursive https://github.com/theos/theos.git $THEOS
-
-      - name: SDK'ları İndir (Hata Düzeltildi)
-        run: |
-          # BURASI: Klasör zaten varsa sil ki hata vermesin
+          
+          # SDK'ları manuel indirip yerine koyuyoruz
           rm -rf $THEOS/sdks
-          git clone https://github.com/theos/sdks.git $THEOS/sdks
-          # SDK dosyalarını düzelt
-          mv $THEOS/sdks/*.sdk $THEOS/sdks/ 2>/dev/null || true
+          mkdir -p $THEOS/sdks
+          cd $THEOS/sdks
+          curl -LO https://github.com/theos/sdks/archive/refs/heads/master.zip
+          unzip master.zip
+          mv sdks-master/*.sdk .
+          rm -rf sdks-master master.zip
 
-      - name: Derlemeyi Başlat (Make)
+      - name: Derlemeyi Başlat
         run: |
-          # Derleme işlemi
           make clean
+          # ldid bulamazsa diye yolunu gösteriyoruz
+          export THEOS_DEVICE_IP=127.0.0.1
           make package FINALPACKAGE=1 messages=yes
 
-      - name: Dylib Dosyasını Yükle
+      - name: Dylib Dosyasını Al
         uses: actions/upload-artifact@v4
         with:
           name: DilSihirbazi-Dylib
           path: .theos/obj/debug/*.dylib
-
-      - name: Deb Dosyasını Yükle (Yedek)
-        uses: actions/upload-artifact@v4
-        with:
-          name: DilSihirbazi-Deb
-          path: packages/*.deb
