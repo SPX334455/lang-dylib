@@ -3,7 +3,7 @@ Name: DilSihirbazi
 Depends: mobilesubstrate
 Version: 0.0.1
 Architecture: iphoneos-arm64
-Description: Uygulama dilini Turkceye zorlar.
+Description: Türkçe dil yaması
 Maintainer: SPX
 Author: SPX
 Section: Tweaks
