@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Clean previous Theos
+      - name: Hard cleanup Theos
         run: |
           rm -rf $HOME/theos
 
@@ -22,14 +22,14 @@ jobs:
           brew update
           brew install ldid dpkg git curl
 
-      - name: Install Theos
+      - name: Clone Theos (no leftovers)
         run: |
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
 
-      - name: Install iOS SDKs (official Theos method)
+      - name: Install iOS SDKs (safe)
         run: |
           export THEOS=$HOME/theos
-          mkdir -p $THEOS/sdks
+          rm -rf $THEOS/sdks
           git clone https://github.com/theos/sdks.git $THEOS/sdks
 
       - name: Build tweak
