@@ -20,17 +20,17 @@ jobs:
       - name: Install dependencies
         run: |
           brew update
-          brew install ldid dpkg git
+          brew install ldid dpkg git curl
 
       - name: Install Theos
         run: |
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
 
-      - name: Install iOS SDK
+      - name: Install iOS SDKs (official Theos method)
         run: |
           export THEOS=$HOME/theos
-          cd $THEOS
-          ./bin/install-sdk.sh iphoneos14.0
+          mkdir -p $THEOS/sdks
+          git clone https://github.com/theos/sdks.git $THEOS/sdks
 
       - name: Build tweak
         run: |
