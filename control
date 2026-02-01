@@ -1,9 +1,9 @@
-Package: com.seninadin.dilsihirbazi
+Package: com.example.dilsihirbazi
 Name: DilSihirbazi
-Depends: mobilesubstrate
-Version: 0.0.1
-Architecture: iphoneos-arm64
-Description: Türkçe dil yaması
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Forces target app system language to Turkish (tr-TR)
 Maintainer: SPX
 Author: SPX
 Section: Tweaks
+Depends: mobilesubstrate
