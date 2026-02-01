@@ -1,11 +1,12 @@
-TARGET := iphone:clang:latest:12.0
-INSTALL_TARGET_PROCESSES = SpringBoard
+ARCHS = arm64 arm64e
+TARGET = iphone:clang:latest:14.0
 
-include $(THEOS)/makefiles/common.mk
+THEOS_PACKAGE_SCHEME = rootless
+INSTALL_TARGET_PROCESSES = *
 
 TWEAK_NAME = DilSihirbazi
-
-DilSihirbazi_FILES = Tweak.mm
+DilSihirbazi_FILES = Tweak.x
 DilSihirbazi_CFLAGS = -fobjc-arc
 
+include $(THEOS)/makefiles/common.mk
 include $(THEOS_MAKE_PATH)/tweak.mk
