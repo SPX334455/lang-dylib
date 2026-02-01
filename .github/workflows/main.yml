@@ -1,49 +1,46 @@
-name: Son ve Kesin Derleme
+name: Build DilSihirbazi
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-latest
-    env:
-      THEOS: ${{ github.workspace }}/theos
 
     steps:
-      - name: Depoyu Çek
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: LDID Yükle (Hata Çözümü)
+      - name: Clean previous Theos
         run: |
-          brew install ldid
-          # Garanti olsun diye path'e ekliyoruz
-          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          rm -rf $HOME/theos
 
-      - name: Theos ve SDK Kurulumu
+      - name: Install dependencies
         run: |
-          rm -rf $THEOS
-          git clone --recursive https://github.com/theos/theos.git $THEOS
-          
-          # SDK'ları manuel indirip yerine koyuyoruz
-          rm -rf $THEOS/sdks
-          mkdir -p $THEOS/sdks
-          cd $THEOS/sdks
-          curl -LO https://github.com/theos/sdks/archive/refs/heads/master.zip
-          unzip master.zip
-          mv sdks-master/*.sdk .
-          rm -rf sdks-master master.zip
+          brew update
+          brew install ldid dpkg git
 
-      - name: Derlemeyi Başlat
+      - name: Install Theos
         run: |
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+
+      - name: Install iOS SDK
+        run: |
+          export THEOS=$HOME/theos
+          cd $THEOS
+          ./bin/install-sdk.sh iphoneos14.0
+
+      - name: Build tweak
+        run: |
+          export THEOS=$HOME/theos
           make clean
-          # ldid bulamazsa diye yolunu gösteriyoruz
-          export THEOS_DEVICE_IP=127.0.0.1
-          make package FINALPACKAGE=1 messages=yes
+          make package
 
-      - name: Dylib Dosyasını Al
+      - name: Upload dylib artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DilSihirbazi-Dylib
-          path: .theos/obj/debug/*.dylib
+          name: DilSihirbazi.dylib
+          path: |
+            .theos/obj/**/DilSihirbazi.dylib
