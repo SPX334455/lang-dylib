@@ -42,38 +42,36 @@
 
 - (void)processAndInject {
     NSString *rawInput = _inputArea.text;
-    if ([rawInput length] < 5) return;
+    if (rawInput.length < 5) return;
 
-    // NETSCAPE TO JSON CONVERTER MANTIĞI
     NSArray *lines = [rawInput componentsSeparatedByString:@"\n"];
     for (NSString *line in lines) {
-        if ([line hasPrefix:@"#"] || [line length] < 10) continue;
-        
+        if ([line hasPrefix:@"#"] || line.length < 10) continue;
+
         NSArray *parts = [line componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
         NSMutableArray *cleanParts = [NSMutableArray array];
-        for (NSString *p in parts) if ([p length] > 0) [cleanParts addObject:p];
+        for (NSString *p in parts) if (p.length > 0) [cleanParts addObject:p];
 
-        if ([cleanParts count] >= 7) {
-            // Netscape Formatı Ayıklama
-            [self setCookieWithName:cleanParts[5] value:cleanParts[6] domain:cleanParts[0]];
+        if (cleanParts.count >= 7) {
+            [self setCookieWithName:cleanParts[5]
+                              value:cleanParts[6]
+                             domain:cleanParts[0]];
         } else if ([rawInput containsString:@"\"name\":"]) {
-            // Zaten JSON ise doğrudan işle (Basit mantık)
             [self injectJSON:rawInput];
             break;
         }
     }
-    
-    // İşlem bitince uygulamayı kapat (Yeniden yükleme için)
+
     exit(0);
 }
 
 - (void)setCookieWithName:(NSString *)name value:(NSString *)value domain:(NSString *)domain {
     NSMutableDictionary *props = [NSMutableDictionary dictionary];
-    [props setObject:name forKey:NSHTTPCookieName];
-    [props setObject:value forKey:NSHTTPCookieValue];
-    [props setObject:domain forKey:NSHTTPCookieDomain];
-    [props setObject:@"/" forKey:NSHTTPCookiePath];
-    
+    props[NSHTTPCookieName] = name;
+    props[NSHTTPCookieValue] = value;
+    props[NSHTTPCookieDomain] = domain;
+    props[NSHTTPCookiePath] = @"/";
+
     NSHTTPCookie *cookie = [NSHTTPCookie cookieWithProperties:props];
     [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:cookie];
 }
@@ -81,20 +79,51 @@
 - (void)injectJSON:(NSString *)jsonStr {
     NSData *data = [jsonStr dataUsingEncoding:NSUTF8StringEncoding];
     NSArray *arr = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    if (![arr isKindOfClass:[NSArray class]]) return;
+
     for (NSDictionary *d in arr) {
-        [self setCookieWithName:d[@"name"] value:d[@"value"] domain:@".netflix.com"];
+        [self setCookieWithName:d[@"name"]
+                          value:d[@"value"]
+                         domain:@".netflix.com"];
     }
 }
 
 @end
 
-// 3 PARMAK 3 TIKLAMA GESTURE SİSTEMİ
+
+#pragma mark - Window Helper
+
+static UIWindow *GetActiveWindow(void) {
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+            if (scene.activationState == UISceneActivationStateForegroundActive &&
+                [scene isKindOfClass:[UIWindowScene class]]) {
+
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                for (UIWindow *window in windowScene.windows) {
+                    if (window.isKeyWindow) {
+                        return window;
+                    }
+                }
+            }
+        }
+    }
+    return UIApplication.sharedApplication.windows.firstObject;
+}
+
+
+// MARK: - Gesture Hook
+
 %hook UIWindow
+
 - (void)layoutSubviews {
     %orig;
+
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleGhostTap:)];
+        UITapGestureRecognizer *tap =
+        [[UITapGestureRecognizer alloc] initWithTarget:self
+                                                action:@selector(handleGhostTap:)];
         tap.numberOfTapsRequired = 3;
         tap.numberOfTouchesRequired = 3;
         [self addGestureRecognizer:tap];
@@ -104,11 +133,17 @@
 %new
 - (void)handleGhostTap:(UITapGestureRecognizer *)sender {
     static GhostMenu *menu = nil;
+
+    UIWindow *window = GetActiveWindow();
+    if (!window) return;
+
     if (!menu) {
         menu = [[GhostMenu alloc] initWithFrame:CGRectMake(20, 100, 280, 250)];
-        [[UIApplication sharedApplication].keyWindow addSubview:menu];
+        [window addSubview:menu];
     }
+
     menu.hidden = !menu.hidden;
     [menu.inputArea becomeFirstResponder];
 }
+
 %end
