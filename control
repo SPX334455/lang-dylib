@@ -1,8 +1,8 @@
-Package: com.example.dilsihirbazi
-Name: DilSihirbazi
+Package: com.example.netflixckgui
+Name: Netflix CookieInj
 Version: 1.0.0
 Architecture: iphoneos-arm
-Description: Forces target app system language to Turkish (tr-TR)
+Description: Inject Cookies to Netflix
 Maintainer: SPX
 Author: SPX
 Section: Tweaks
