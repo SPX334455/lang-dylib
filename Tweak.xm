@@ -1,6 +1,5 @@
 #import <UIKit/UIKit.h>
 
-// --- PANEL ARAYÜZÜ ---
 @interface GhostPanel : UIView
 @property (nonatomic, strong) UITextView *inputField;
 @end
@@ -29,7 +28,6 @@
         _inputField.layer.cornerRadius = 5;
         [self addSubview:_inputField];
 
-        // KAPATMA BUTONU (Yanlışlıkla açılırsa diye)
         UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
         closeBtn.frame = CGRectMake(frame.size.width - 30, 5, 25, 25);
         [closeBtn setTitle:@"X" forState:UIControlStateNormal];
@@ -52,17 +50,14 @@
 - (void)hideMenu { self.hidden = YES; }
 
 - (void)processAndLogin {
-    // 1. ADIM: TÜM MEVCUT ÇEREZLERİ SİL (Cookie-Editor Delete All Mantığı)
     NSHTTPCookieStorage *storage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
-    NSArray *cookies = [storage cookies];
-    for (NSHTTPCookie *cookie in cookies) {
+    for (NSHTTPCookie *cookie in [storage cookies]) {
         [storage deleteCookie:cookie];
     }
 
     NSString *raw = _inputField.text;
     if (raw.length < 5) return;
 
-    // 2. ADIM: JSON AYIKLAMA
     if ([raw containsString:@"\"name\""]) {
         NSData *data = [raw dataUsingEncoding:NSUTF8StringEncoding];
         id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
@@ -72,7 +67,6 @@
             }
         }
     } 
-    // 3. ADIM: NETSCAPE (TAB) AYIKLAMA
     else if ([raw containsString:@"\t"]) {
         NSArray *lines = [raw componentsSeparatedByString:@"\n"];
         for (NSString *line in lines) {
@@ -81,7 +75,6 @@
         }
     }
 
-    // 4. ADIM: KAYDET VE UYGULAMAYI ZORLA KAPAT
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         exit(0); 
     });
@@ -100,27 +93,32 @@
 }
 @end
 
-// --- UYGULAMA AÇILDIĞINDA OTOMATİK GÖSTER ---
+// --- GÜVENLİ PENCERE BULUCU (MODERN) ---
+static UIWindow* get_top_window() {
+    UIWindow *foundWindow = nil;
+    for (UIWindowScene* scene in [UIApplication sharedApplication].connectedScenes) {
+        if (scene.activationState == UISceneActivationStateForegroundActive) {
+            for (UIWindow *window in scene.windows) {
+                if (window.isKeyWindow) {
+                    foundWindow = window;
+                    break;
+                }
+            }
+        }
+        if (foundWindow) break;
+    }
+    return foundWindow;
+}
+
 %hook UIViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            UIWindow *win = nil;
-            if (@available(iOS 13.0, *)) {
-                for (UIWindowScene* scene in [UIApplication sharedApplication].connectedScenes) {
-                    if (scene.activationState == UISceneActivationStateForegroundActive) {
-                        win = scene.windows.firstObject;
-                        break;
-                    }
-                }
-            }
-            if (!win) win = [UIApplication sharedApplication].keyWindow;
-
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            UIWindow *win = get_top_window();
             if (win) {
                 GhostPanel *panel = [[GhostPanel alloc] initWithFrame:CGRectMake((win.frame.size.width-300)/2, 120, 300, 250)];
-                panel.tag = 9988;
                 [win addSubview:panel];
                 [win bringSubviewToFront:panel];
             }
