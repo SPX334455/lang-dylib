@@ -1,4 +1,4 @@
-name: Build NetflixCookieInj
+name: Build GhostNetflix
 
 on:
   push:
@@ -13,23 +13,37 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Setup Theos
         run: |
-          brew update
-          brew install ldid dpkg git curl
-
-      - name: Clone Theos
-        run: |
+          # Theos'u indir
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          
+          # iOS SDK'larını indir (En önemli kısım bu!)
+          # Theos'un modern iOS SDK'larına ihtiyacı var.
+          curl -LO https://github.com/theos/sdks/archive/master.zip
+          unzip master.zip
+          mv sdks-master/* $HOME/theos/sdks/
+          rm -rf master.zip sdks-master
 
-      - name: Build tweak
+      - name: Install Dependencies
+        run: |
+          brew install ldid dpkg
+
+      - name: Build Tweak
         run: |
           export THEOS=$HOME/theos
+          # Sadece arm64 ve arm64e için derleyelim (Modern cihazlar)
           make clean
-          make package
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          
+          # ESign için .dylib dosyasını dışarı çıkaralım
+          mkdir -p extracted_dylib
+          find .theos/obj -name "*.dylib" -exec cp {} extracted_dylib/ \;
 
-      - name: Upload DEB package
+      - name: Upload Dylib & DEB
         uses: actions/upload-artifact@v4
         with:
-          name: NetflixCookieInj.deb
-          path: packages/*.deb
+          name: GhostNetflix_Files
+          path: |
+            packages/*.deb
+            extracted_dylib/*.dylib
