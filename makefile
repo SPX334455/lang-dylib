@@ -4,7 +4,7 @@ TARGET = iphone:clang:latest:14.0
 THEOS_PACKAGE_SCHEME = rootless
 INSTALL_TARGET_PROCESSES = *
 
-TWEAK_NAME = DilSihirbazi
+TWEAK_NAME = Netflix CookieInj
 DilSihirbazi_FILES = Tweak.x
 DilSihirbazi_CFLAGS = -fobjc-arc
 
