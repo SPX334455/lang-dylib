@@ -22,11 +22,6 @@ jobs:
         run: |
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
 
-      - name: Install iOS SDKs
-        run: |
-          export THEOS=$HOME/theos
-          git clone https://github.com/theos/sdks.git $THEOS/sdks
-
       - name: Build tweak
         run: |
           export THEOS=$HOME/theos
