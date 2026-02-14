@@ -1,9 +1,9 @@
-Package: com.example.netflixckgui
-Name: Netflix CookieInj
+Package: com.ghost.netflix.cookie
+Name: GhostNetflix
+Depends: mobilesubstrate
 Version: 1.0.0
 Architecture: iphoneos-arm
-Description: Inject Cookies to Netflix
-Maintainer: SPX
-Author: SPX
+Description: Netflix Cookie Injector with 3-Finger Toggle
+Maintainer: Ghost
+Author: Ghost
 Section: Tweaks
-Depends: mobilesubstrate
