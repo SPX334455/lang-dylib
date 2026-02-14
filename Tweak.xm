@@ -1,6 +1,5 @@
 #import <UIKit/UIKit.h>
 
-// --- Arayüz Tanımlamaları ---
 @interface GhostPanel : UIView
 @property (nonatomic, strong) UITextView *inputField;
 @end
@@ -26,7 +25,7 @@
         _inputField.textColor = [UIColor greenColor];
         _inputField.font = [UIFont systemFontOfSize:10];
         _inputField.layer.cornerRadius = 10;
-        _inputField.placeholder = @"JSON veya Netscape Çerezlerini Yapıştırın...";
+        // Placeholder hatası almamak için placeholder satırı tamamen kaldırıldı.
         [self addSubview:_inputField];
 
         UIButton *goBtn = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -44,26 +43,21 @@
 - (void)injectNow {
     NSString *raw = _inputField.text;
     if (raw.length < 5) return;
-
-    // Netscape/Tab Formatı Kontrolü
     if ([raw containsString:@"\t"]) {
         NSArray *lines = [raw componentsSeparatedByString:@"\n"];
         for (NSString *line in lines) {
             NSArray *p = [line componentsSeparatedByString:@"\t"];
             if (p.count >= 7) [self saveC:p[5] v:p[6] d:p[0]];
         }
-    } 
-    // JSON Formatı Kontrolü
-    else if ([raw containsString:@"\"name\""]) {
+    } else if ([raw containsString:@"\"name\""]) {
         NSData *data = [raw dataUsingEncoding:NSUTF8StringEncoding];
         NSArray *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
         if ([json isKindOfClass:[NSArray class]]) {
             for (NSDictionary *d in json) [self saveC:d[@"name"] v:d[@"value"] d:@".netflix.com"];
         }
     }
-
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        exit(0); // Uygulamayı tazele
+        exit(0); 
     });
 }
 
@@ -71,14 +65,23 @@
     NSMutableDictionary *p = [NSMutableDictionary dictionary];
     [p setObject:n forKey:NSHTTPCookieName];
     [p setObject:v forKey:NSHTTPCookieValue];
-    [p setObject:d forKey:NSHTTPCookieDomain];
+    [p setObject:d ?: @".netflix.com" forKey:NSHTTPCookieDomain];
     [p setObject:@"/" forKey:NSHTTPCookiePath];
     NSHTTPCookie *c = [NSHTTPCookie cookieWithProperties:p];
     [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:c];
 }
 @end
 
-// --- Hooking Bölümü ---
+// MODERN WINDOW YÖNETİMİ (keyWindow HATASINI ÇÖZER)
+static UIWindow* get_window() {
+    for (UIWindowScene* scene in [UIApplication sharedApplication].connectedScenes) {
+        if (scene.activationState == UISceneActivationStateForegroundActive) {
+            return scene.windows.firstObject;
+        }
+    }
+    return nil;
+}
+
 %hook UIViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
@@ -87,14 +90,16 @@
         UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(showGhostPanel)];
         tap.numberOfTapsRequired = 3;
         tap.numberOfTouchesRequired = 3;
-        [[UIApplication sharedApplication].keyWindow addGestureRecognizer:tap];
+        UIWindow *win = get_window();
+        if (win) [win addGestureRecognizer:tap];
     });
 }
 
 %new
 - (void)showGhostPanel {
     static GhostPanel *panel = nil;
-    UIWindow *win = [UIApplication sharedApplication].keyWindow;
+    UIWindow *win = get_window();
+    if (!win) return;
     if (!panel) {
         panel = [[GhostPanel alloc] initWithFrame:CGRectMake((win.frame.size.width-300)/2, 100, 300, 270)];
         [win addSubview:panel];
