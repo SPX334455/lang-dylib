@@ -10,109 +10,106 @@
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.8];
+        self.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.85];
         self.layer.cornerRadius = 15;
         self.layer.borderWidth = 1;
         self.layer.borderColor = [UIColor redColor].CGColor;
 
         UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, frame.size.width, 20)];
         title.text = @"GHOST COOKIE INJECTOR";
-        title.textColor = [UIColor whiteColor];
+        title.textColor = UIColor.whiteColor;
         title.textAlignment = NSTextAlignmentCenter;
         title.font = [UIFont boldSystemFontOfSize:14];
         [self addSubview:title];
 
         _inputArea = [[UITextView alloc] initWithFrame:CGRectMake(10, 40, frame.size.width - 20, 150)];
-        _inputArea.backgroundColor = [UIColor darkGrayColor];
-        _inputArea.textColor = [UIColor greenColor];
+        _inputArea.backgroundColor = UIColor.darkGrayColor;
+        _inputArea.textColor = UIColor.greenColor;
         _inputArea.layer.cornerRadius = 8;
         [self addSubview:_inputArea];
 
         _injectBtn = [UIButton buttonWithType:UIButtonTypeSystem];
         _injectBtn.frame = CGRectMake(10, 200, frame.size.width - 20, 40);
         [_injectBtn setTitle:@"DÖNÜŞTÜR VE ENJEKTE ET" forState:UIControlStateNormal];
-        [_injectBtn setBackgroundColor:[UIColor redColor]];
-        [_injectBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [_injectBtn setBackgroundColor:UIColor.redColor];
+        [_injectBtn setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
         _injectBtn.layer.cornerRadius = 8;
-        [_injectBtn addTarget:self action:@selector(processAndInject) forControlEvents:UIControlEventTouchUpInside];
+        [_injectBtn addTarget:self action:@selector(processAndInject)
+             forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_injectBtn];
     }
     return self;
 }
 
 - (void)processAndInject {
-    NSString *rawInput = _inputArea.text;
+    NSString *rawInput = self.inputArea.text;
     if (rawInput.length < 5) return;
 
-    NSArray *lines = [rawInput componentsSeparatedByString:@"\n"];
-    for (NSString *line in lines) {
-        if ([line hasPrefix:@"#"] || line.length < 10) continue;
+    if ([rawInput containsString:@"\"name\":"]) {
+        [self injectJSON:rawInput];
+    } else {
+        NSArray *lines = [rawInput componentsSeparatedByString:@"\n"];
+        for (NSString *line in lines) {
+            if ([line hasPrefix:@"#"] || line.length < 10) continue;
 
-        NSArray *parts = [line componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-        NSMutableArray *cleanParts = [NSMutableArray array];
-        for (NSString *p in parts) if (p.length > 0) [cleanParts addObject:p];
+            NSArray *parts =
+            [line componentsSeparatedByCharactersInSet:
+             NSCharacterSet.whitespaceCharacterSet];
 
-        if (cleanParts.count >= 7) {
-            [self setCookieWithName:cleanParts[5]
-                              value:cleanParts[6]
-                             domain:cleanParts[0]];
-        } else if ([rawInput containsString:@"\"name\":"]) {
-            [self injectJSON:rawInput];
-            break;
+            NSMutableArray *clean = NSMutableArray.array;
+            for (NSString *p in parts)
+                if (p.length > 0) [clean addObject:p];
+
+            if (clean.count >= 7) {
+                [self setCookieWithName:clean[5]
+                                  value:clean[6]
+                                 domain:clean[0]];
+            }
         }
     }
 
     exit(0);
 }
 
-- (void)setCookieWithName:(NSString *)name value:(NSString *)value domain:(NSString *)domain {
-    NSMutableDictionary *props = [NSMutableDictionary dictionary];
+- (void)setCookieWithName:(NSString *)name
+                    value:(NSString *)value
+                   domain:(NSString *)domain {
+
+    NSMutableDictionary *props = NSMutableDictionary.dictionary;
     props[NSHTTPCookieName] = name;
     props[NSHTTPCookieValue] = value;
     props[NSHTTPCookieDomain] = domain;
     props[NSHTTPCookiePath] = @"/";
 
     NSHTTPCookie *cookie = [NSHTTPCookie cookieWithProperties:props];
-    [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:cookie];
+    if (cookie) {
+        [NSHTTPCookieStorage.sharedHTTPCookieStorage setCookie:cookie];
+    }
 }
 
 - (void)injectJSON:(NSString *)jsonStr {
     NSData *data = [jsonStr dataUsingEncoding:NSUTF8StringEncoding];
-    NSArray *arr = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-    if (![arr isKindOfClass:[NSArray class]]) return;
+    if (!data) return;
 
-    for (NSDictionary *d in arr) {
-        [self setCookieWithName:d[@"name"]
-                          value:d[@"value"]
-                         domain:@".netflix.com"];
+    NSError *error = nil;
+    id obj = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+    if (![obj isKindOfClass:[NSArray class]]) return;
+
+    for (NSDictionary *d in (NSArray *)obj) {
+        NSString *name = d[@"name"];
+        NSString *value = d[@"value"];
+        if (name && value) {
+            [self setCookieWithName:name
+                              value:value
+                             domain:@".netflix.com"];
+        }
     }
 }
 
 @end
 
 
-#pragma mark - Window Helper
-
-static UIWindow *GetActiveWindow(void) {
-    if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-            if (scene.activationState == UISceneActivationStateForegroundActive &&
-                [scene isKindOfClass:[UIWindowScene class]]) {
-
-                UIWindowScene *windowScene = (UIWindowScene *)scene;
-                for (UIWindow *window in windowScene.windows) {
-                    if (window.isKeyWindow) {
-                        return window;
-                    }
-                }
-            }
-        }
-    }
-    return UIApplication.sharedApplication.windows.firstObject;
-}
-
-
-// MARK: - Gesture Hook
+#pragma mark - UIWindow Hook (NO deprecated API)
 
 %hook UIWindow
 
@@ -134,11 +131,11 @@ static UIWindow *GetActiveWindow(void) {
 - (void)handleGhostTap:(UITapGestureRecognizer *)sender {
     static GhostMenu *menu = nil;
 
-    UIWindow *window = GetActiveWindow();
+    UIWindow *window = (UIWindow *)self;
     if (!window) return;
 
     if (!menu) {
-        menu = [[GhostMenu alloc] initWithFrame:CGRectMake(20, 100, 280, 250)];
+        menu = [[GhostMenu alloc] initWithFrame:CGRectMake(20, 120, 300, 260)];
         [window addSubview:menu];
     }
 
