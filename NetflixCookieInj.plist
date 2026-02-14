@@ -7,7 +7,7 @@
     <dict>
         <key>Bundles</key>
         <array>
-            <string>com.apple.UIKit</string>
+            <string>com.netflix.Netflix</string>
         </array>
     </dict>
 </dict>
