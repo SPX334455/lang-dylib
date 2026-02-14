@@ -1,4 +1,4 @@
-name: Build DilSihirbazi
+name: Build NetflixCookieInj
 
 on:
   push:
@@ -13,23 +13,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Hard cleanup Theos
-        run: |
-          rm -rf $HOME/theos
-
       - name: Install dependencies
         run: |
           brew update
           brew install ldid dpkg git curl
 
-      - name: Clone Theos (no leftovers)
+      - name: Clone Theos
         run: |
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
 
-      - name: Install iOS SDKs (safe)
+      - name: Install iOS SDKs
         run: |
           export THEOS=$HOME/theos
-          rm -rf $THEOS/sdks
           git clone https://github.com/theos/sdks.git $THEOS/sdks
 
       - name: Build tweak
@@ -38,9 +33,8 @@ jobs:
           make clean
           make package
 
-      - name: Upload dylib artifact
+      - name: Upload DEB package
         uses: actions/upload-artifact@v4
         with:
-          name: DilSihirbazi.dylib
-          path: |
-            .theos/obj/**/DilSihirbazi.dylib
+          name: NetflixCookieInj.deb
+          path: packages/*.deb
