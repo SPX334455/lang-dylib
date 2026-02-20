@@ -1,9 +1,9 @@
-Package: com.ghost.netflix.cookie
-Name: GhostNetflix
+Package: com.ghost.goapeshipfix
+Name: GoApeShipFix
 Depends: mobilesubstrate
 Version: 1.0.0
 Architecture: iphoneos-arm
-Description: Netflix Cookie Injector with 3-Finger Toggle
+Description: Loading screen crash fix for Go Ape Ship.
 Maintainer: Ghost
 Author: Ghost
 Section: Tweaks
